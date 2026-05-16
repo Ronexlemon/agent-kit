@@ -83,11 +83,12 @@ func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, v
 	for {
 		fmt.Fprintf(writer, "Enter %s: ", label)
 		text, err := reader.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
+		isEOF := errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+		if err != nil && !isEOF {
 			return "", err
 		}
 		text = strings.TrimSpace(text)
-		if errors.Is(err, io.EOF) {
+		if isEOF {
 			if text == "" {
 				return "", fmt.Errorf("%s is required", strings.ToLower(label))
 			}
