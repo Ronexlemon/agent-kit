@@ -50,7 +50,6 @@ func newCreateCmd() *cobra.Command {
 
 	createCmd.Flags().StringVarP(&info.Name, "name", "n", "", "Name of the agent")
 	createCmd.Flags().StringVarP(&info.Description, "description", "d", "", "Description of the agent")
-	createCmd.Flags().StringVar(&info.Description, "desc", "", "Description of the agent")
 
 	return createCmd
 }
@@ -85,14 +84,14 @@ func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, v
 		fmt.Fprintf(writer, "Enter %s: ", label)
 		text, err := reader.ReadString('\n')
 		text = strings.TrimSpace(text)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return "", err
+		}
 		if text != "" {
 			return text, nil
 		}
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return "", fmt.Errorf("%s is required", strings.ToLower(label))
-			}
-			return "", err
+		if errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("%s is required", strings.ToLower(label))
 		}
 	}
 }
