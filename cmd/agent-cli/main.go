@@ -90,7 +90,7 @@ func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, v
 	for {
 		fmt.Fprintf(writer, "Enter %s: ", label)
 		text, err := reader.ReadString('\n')
-		isEOF := errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+		isEOF := errors.Is(err, io.EOF)
 		if err != nil && !isEOF {
 			return "", err
 		}
