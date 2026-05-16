@@ -30,6 +30,27 @@ func TestCreateUsesFlagValues(t *testing.T) {
 	}
 }
 
+func TestCreateAcceptsLegacyDescFlag(t *testing.T) {
+	cmd := newRootCmd()
+	var output bytes.Buffer
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{
+		"create",
+		"--name", "Atlas",
+		"--desc", "Handles agent workflows",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+
+	got := output.String()
+	if !strings.Contains(got, "Description: Handles agent workflows") {
+		t.Fatalf("expected output to contain agent description from legacy flag, got %q", got)
+	}
+}
+
 func TestCreatePromptsUntilRequiredFieldsAreProvided(t *testing.T) {
 	cmd := newRootCmd()
 	var output bytes.Buffer

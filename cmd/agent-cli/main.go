@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type agentInfo struct {
@@ -48,6 +49,12 @@ func newCreateCmd() *cobra.Command {
 		},
 	}
 
+	createCmd.Flags().SetNormalizeFunc(func(_ *pflag.FlagSet, name string) pflag.NormalizedName {
+		if name == "desc" {
+			name = "description"
+		}
+		return pflag.NormalizedName(name)
+	})
 	createCmd.Flags().StringVarP(&info.Name, "name", "n", "", "Name of the agent")
 	createCmd.Flags().StringVarP(&info.Description, "description", "d", "", "Description of the agent")
 
@@ -90,7 +97,7 @@ func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, v
 		text = strings.TrimSpace(text)
 		if isEOF {
 			if text == "" {
-				return "", fmt.Errorf("%s is required", strings.ToLower(label))
+				return "", fmt.Errorf("unexpected EOF: %s is required", strings.ToLower(label))
 			}
 			return text, nil
 		}
