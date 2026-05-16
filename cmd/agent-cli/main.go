@@ -81,10 +81,10 @@ func collectAgentInfo(cmd *cobra.Command, info agentInfo) (agentInfo, error) {
 	}, nil
 }
 
-func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, value string) (string, error) {
-	value = strings.TrimSpace(value)
-	if value != "" {
-		return value, nil
+func promptRequiredField(reader *bufio.Reader, writer io.Writer, label string, initialValue string) (string, error) {
+	initialValue = strings.TrimSpace(initialValue)
+	if initialValue != "" {
+		return initialValue, nil
 	}
 
 	for {
