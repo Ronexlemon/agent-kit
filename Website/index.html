@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>agent-kit — Go infrastructure for Celo’s agent economy</title>
+  <meta name="description" content="agent-kit is an open-source Go SDK and CLI for creating, publishing, registering, resolving, and verifying ERC-8004-compatible AI agents on Celo." />
+  <style>
+    :root {
+      --bg: #f7f8f3;
+      --bg-soft: #eef1e7;
+      --ink: #101412;
+      --muted: #59645d;
+      --line: rgba(16, 20, 18, 0.12);
+      --line-strong: rgba(16, 20, 18, 0.2);
+      --card: rgba(255, 255, 249, 0.78);
+      --card-solid: #fffff8;
+      --dark: #07100c;
+      --dark-2: #0d1813;
+      --dark-3: #12231a;
+      --code: #07100c;
+      --celo-yellow: #fbff4b;
+      --celo-green: #35d07f;
+      --green-soft: #dfffe9;
+      --yellow-soft: #fbffd0;
+      --blue: #4c8dff;
+      --shadow: 0 24px 80px rgba(9, 17, 13, 0.12);
+      --radius-lg: 28px;
+      --radius-md: 20px;
+      --radius-sm: 14px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(251,255,75,0.25), transparent 28rem),
+        radial-gradient(circle at 88% 14%, rgba(53,208,127,0.18), transparent 28rem),
+        linear-gradient(180deg, #f9faf4 0%, var(--bg) 42%, #eef1e7 100%);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    .container { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 248, 243, 0.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 790;
+      letter-spacing: -0.04em;
+      font-size: 21px;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(16,20,18,0.2);
+      border-radius: 10px;
+      background: var(--dark);
+      display: grid;
+      place-items: center;
+      color: var(--celo-yellow);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      box-shadow: inset 0 0 0 1px rgba(251,255,75,0.1);
+    }
+    .version {
+      border: 1px solid rgba(16,20,18,0.14);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      letter-spacing: 0;
+      font-weight: 700;
+      background: rgba(255,255,248,0.7);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: #2c342f;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .nav-links a { opacity: 0.78; }
+    .nav-links a:hover { opacity: 1; }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .network-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,248,0.75);
+      border-radius: 999px;
+      color: #26302a;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--celo-green); box-shadow: 0 0 0 4px rgba(53,208,127,0.14); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 760;
+      font-size: 14px;
+      border: 1px solid transparent;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--dark); color: #fff; box-shadow: 0 12px 30px rgba(7,16,12,0.18); }
+    .btn-primary:hover { box-shadow: 0 16px 38px rgba(7,16,12,0.25); }
+    .btn-accent { background: var(--celo-yellow); color: #09110c; border-color: rgba(16,20,18,0.14); }
+    .btn-ghost { background: rgba(255,255,248,0.68); color: var(--ink); border-color: var(--line); }
+    .btn-ghost:hover { background: #fff; border-color: var(--line-strong); }
+
+    .hero { padding: 86px 0 44px; position: relative; overflow: hidden; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(53,208,127,0.35);
+      background: rgba(223,255,233,0.68);
+      color: #0d6a3a;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 22px;
+    }
+    h1 {
+      margin: 0;
+      max-width: 700px;
+      font-size: clamp(44px, 7vw, 84px);
+      line-height: 0.94;
+      letter-spacing: -0.075em;
+      font-weight: 860;
+    }
+    .accent-word {
+      display: inline-block;
+      background: linear-gradient(90deg, #0f5d34, #13a15a 38%, #a8b000 78%);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .lead {
+      margin: 24px 0 0;
+      max-width: 620px;
+      color: #3e4942;
+      font-size: 19px;
+      line-height: 1.65;
+      letter-spacing: -0.015em;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .trust-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      background: rgba(255,255,248,0.68);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #344039;
+      font-size: 13px;
+      font-weight: 720;
+    }
+    .check { color: #159351; font-weight: 950; }
+
+    .proof-stack { position: relative; }
+    .terminal-card {
+      background: var(--dark);
+      color: #ebfff0;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 36px 90px rgba(7,16,12,0.25);
+      overflow: hidden;
+    }
+    .terminal-top {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.03);
+    }
+    .traffic { display: flex; gap: 8px; }
+    .traffic span { width: 11px; height: 11px; border-radius: 50%; display: block; opacity: 0.92; }
+    .traffic span:nth-child(1) { background: #ff6b47; }
+    .traffic span:nth-child(2) { background: #ffc447; }
+    .traffic span:nth-child(3) { background: #35d07f; }
+    .terminal-label { color: rgba(235,255,240,0.55); font-size: 13px; font-weight: 700; }
+    pre { margin: 0; white-space: pre-wrap; }
+    .code-body {
+      padding: 24px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .cmd { color: #fbff4b; }
+    .flag { color: #b7c2bb; }
+    .str { color: #7dffa8; }
+    .ok { color: #69ff8d; }
+    .dim { color: rgba(235,255,240,0.48); }
+    .ref { color: #86b7ff; }
+
+    .mainnet-strip {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .mini-proof {
+      background: rgba(255,255,248,0.8);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 16px 40px rgba(9,17,13,0.06);
+    }
+    .mini-proof span { display: block; color: var(--muted); font-size: 12px; font-weight: 760; text-transform: uppercase; letter-spacing: .06em; }
+    .mini-proof strong { display: block; margin-top: 4px; font-size: 14px; letter-spacing: -0.01em; }
+
+    .section { padding: 74px 0; }
+    .section-head { max-width: 760px; margin-bottom: 30px; }
+    .section-kicker { color: #128249; font-size: 13px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; }
+    h2 { margin: 0; font-size: clamp(32px, 4vw, 54px); line-height: 1.02; letter-spacing: -0.055em; font-weight: 850; }
+    .section-copy { color: var(--muted); font-size: 17px; line-height: 1.7; margin: 16px 0 0; max-width: 720px; }
+
+    .proof-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .proof-card, .feature-card, .doc-card, .milestone-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: 0 16px 50px rgba(9,17,13,0.06);
+    }
+    .proof-card strong { display: block; font-size: 32px; letter-spacing: -0.05em; line-height: 1; }
+    .proof-card span { display: block; color: var(--muted); margin-top: 8px; font-weight: 650; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: var(--dark);
+      color: var(--celo-yellow);
+      margin-bottom: 18px;
+      font-weight: 900;
+      font-size: 20px;
+    }
+    .feature-card h3, .doc-card h3, .milestone-card h3 { margin: 0; font-size: 20px; letter-spacing: -0.03em; }
+    .feature-card p, .doc-card p, .milestone-card p { color: var(--muted); margin: 10px 0 0; font-size: 15px; line-height: 1.65; }
+
+    .architecture {
+      border-radius: 34px;
+      background: #fffef6;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .architecture-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 26px 28px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,248,1), rgba(255,255,248,0.72));
+    }
+    .arch-title { font-weight: 850; font-size: 18px; letter-spacing: -0.02em; }
+    .arch-caption { color: var(--muted); font-size: 14px; max-width: 560px; }
+    .architecture-body { padding: 32px; }
+    .arch-flow {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr 40px 1fr;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .arch-node {
+      min-height: 160px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #fff, #f9fbf1);
+      position: relative;
+    }
+    .arch-node.dark {
+      background: var(--dark);
+      color: #effff2;
+      border-color: rgba(255,255,255,0.1);
+    }
+    .arch-node strong { display: block; font-size: 18px; letter-spacing: -0.03em; }
+    .arch-node p { color: var(--muted); font-size: 14px; margin: 10px 0 0; line-height: 1.55; }
+    .arch-node.dark p { color: rgba(239,255,242,0.68); }
+    .arch-meta { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag { font-size: 12px; font-weight: 800; border: 1px solid var(--line); padding: 5px 8px; border-radius: 999px; color: #385044; background: rgba(223,255,233,0.55); }
+    .arch-arrow { display: grid; place-items: center; color: #748077; font-size: 24px; font-weight: 800; }
+
+    .quickstart-grid {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .steps { display: grid; gap: 12px; }
+    .step {
+      display: flex;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,248,0.68);
+    }
+    .step-num {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--dark); color: var(--celo-yellow); display: grid; place-items: center; font-weight: 850; flex: 0 0 auto;
+      font-size: 13px;
+    }
+    .step strong { display: block; letter-spacing: -0.02em; }
+    .step span { display: block; color: var(--muted); margin-top: 4px; font-size: 14px; }
+    .code-panel {
+      border-radius: var(--radius-lg);
+      background: var(--code);
+      color: #e9fff0;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 24px 70px rgba(7,16,12,0.20);
+      overflow: hidden;
+    }
+    .code-panel .code-body { padding: 28px; font-size: 13.5px; }
+
+    .evidence {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+    .evidence-card {
+      padding: 28px;
+      border-radius: var(--radius-lg);
+      background: var(--dark);
+      color: #effff2;
+      box-shadow: 0 24px 70px rgba(7,16,12,0.18);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .evidence-card.light { background: #fffef6; color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .evidence-card h3 { margin: 0; font-size: 28px; letter-spacing: -0.045em; }
+    .evidence-card p { color: rgba(239,255,242,0.68); margin: 12px 0 0; }
+    .evidence-card.light p { color: var(--muted); }
+    .evidence-list { margin-top: 22px; display: grid; gap: 10px; }
+    .evidence-row {
+      display: grid;
+      grid-template-columns: 132px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 14px;
+    }
+    .evidence-card.light .evidence-row { border-bottom-color: var(--line); }
+    .label { color: rgba(239,255,242,0.55); font-weight: 800; }
+    .evidence-card.light .label { color: var(--muted); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+    .status { color: var(--celo-green); font-weight: 850; }
+    .placeholder { color: #9aa49d; }
+
+    .doc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .doc-card { padding: 22px; min-height: 170px; }
+    .doc-card .arrow { margin-top: 22px; color: #14874c; font-weight: 900; }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .milestone-card ul { margin: 16px 0 0; padding-left: 18px; color: var(--muted); }
+    .milestone-card li { margin: 8px 0; }
+    .milestone-card.now { border-color: rgba(53,208,127,0.4); background: rgba(223,255,233,0.52); }
+
+    .grant-band {
+      border-radius: 36px;
+      padding: 40px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(251,255,75,0.26), transparent 24rem),
+        radial-gradient(circle at 86% 25%, rgba(53,208,127,0.22), transparent 24rem),
+        var(--dark);
+      color: #f4fff5;
+      display: grid;
+      grid-template-columns: 1fr 0.9fr;
+      gap: 28px;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 30px 90px rgba(7,16,12,0.20);
+    }
+    .grant-band h2 { color: #fff; }
+    .grant-band p { color: rgba(244,255,245,0.7); font-size: 17px; line-height: 1.7; }
+    .fit-list { display: grid; gap: 10px; }
+    .fit-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: rgba(244,255,245,0.82);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .footer { padding: 42px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .footer-row { display: flex; justify-content: space-between; gap: 22px; align-items: center; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+    .footer-links a { font-weight: 700; color: #364239; }
+
+    @media (max-width: 980px) {
+      .nav-links, .network-pill { display: none; }
+      .hero-grid, .quickstart-grid, .evidence, .grant-band { grid-template-columns: 1fr; }
+      .proof-stack { order: -1; }
+      .mainnet-strip, .proof-cards, .feature-grid, .doc-grid, .roadmap { grid-template-columns: 1fr 1fr; }
+      .arch-flow { grid-template-columns: 1fr; }
+      .arch-arrow { transform: rotate(90deg); min-height: 24px; }
+    }
+    @media (max-width: 640px) {
+      .container { width: min(100% - 28px, var(--max)); }
+      .hero { padding-top: 42px; }
+      .nav { height: 66px; }
+      .version, .nav-actions .btn-ghost { display: none; }
+      .hero-actions .btn { width: 100%; }
+      .mainnet-strip, .proof-cards, .feature-grid, .doc-grid, .roadmap { grid-template-columns: 1fr; }
+      .terminal-card, .code-panel, .architecture, .grant-band { border-radius: 22px; }
+      .architecture-body, .grant-band { padding: 22px; }
+      .architecture-top { flex-direction: column; padding: 22px; }
+      .evidence-row { grid-template-columns: 1fr; gap: 4px; }
+      .section { padding: 54px 0; }
+      .code-body { font-size: 12.5px; padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="agent-kit home">
+        <span class="brand-mark">&gt;_</span>
+        <span>agent-kit</span>
+        <span class="version">v0.1</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#quickstart">Quickstart</a>
+        <a href="#mainnet">Mainnet Proof</a>
+        <a href="#grant-fit">Grant Fit</a>
+      </nav>
+      <div class="nav-actions">
+        <span class="network-pill"><span class="dot"></span>Celo Mainnet</span>
+        <a class="btn btn-ghost" href="https://github.com/ronexlemon/agent-kit" target="_blank" rel="noreferrer">GitHub</a>
+        <a class="btn btn-primary" href="#quickstart">Get Started</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> Open-source Go SDK + CLI for Celo’s agent economy</div>
+          <h1>Go infrastructure for AI agents <span class="accent-word">on Celo.</span></h1>
+          <p class="lead">agent-kit helps developers create metadata, publish it to IPFS, register agents on-chain, resolve service endpoints, and read reputation signals through reusable Go tooling.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#quickstart">Start building</a>
+            <a class="btn btn-ghost" href="https://github.com/ronexlemon/agent-kit" target="_blank" rel="noreferrer">View GitHub</a>
+            <a class="btn btn-accent" href="#mainnet">View mainnet proof</a>
+          </div>
+          <div class="trust-row" aria-label="Project qualities">
+            <span class="trust-chip"><span class="check">✓</span> Infrastructure, not an app</span>
+            <span class="trust-chip"><span class="check">✓</span> ERC-8004-compatible direction</span>
+            <span class="trust-chip"><span class="check">✓</span> Celo-native by design</span>
+          </div>
+        </div>
+
+        <div class="proof-stack" aria-label="Terminal quickstart preview">
+          <div class="terminal-card">
+            <div class="terminal-top">
+              <div class="traffic"><span></span><span></span><span></span></div>
+              <div class="terminal-label">agent-kit quickstart</div>
+            </div>
+            <div class="code-body">
+<pre><span class="cmd">$</span> go install github.com/ronexlemon/agent-kit/cmd/agent-kit@latest
+
+<span class="cmd">$</span> agent-kit create \
+  <span class="flag">--name</span> <span class="str">"Celo Assistant Agent"</span> \
+  <span class="flag">--service</span> <span class="str">MCP:https://agent.example/mcp</span> \
+  <span class="flag">--service</span> <span class="str">A2A:https://agent.example/a2a</span>
+
+<span class="cmd">$</span> agent-kit publish ./agent.json <span class="flag">--provider</span> pinata
+<span class="ok">✓</span> Metadata pinned to <span class="str">ipfs://bafy...</span>
+
+<span class="cmd">$</span> agent-kit register <span class="flag">--network</span> celo <span class="flag">--metadata</span> ipfs://bafy...
+<span class="ok">✓</span> Registered agent <span class="dim">ID:</span> 1
+
+<span class="cmd">$</span> agent-kit resolve <span class="ref">eip155:42220:0xRegistry:1</span>
+<span class="ok">✓</span> services: MCP, A2A</pre>
+            </div>
+          </div>
+          <div class="mainnet-strip">
+            <div class="mini-proof"><span>Network</span><strong>Celo Mainnet</strong></div>
+            <div class="mini-proof"><span>Chain ID</span><strong>42220</strong></div>
+            <div class="mini-proof"><span>Status</span><strong>Demo-ready path</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Why it exists</div>
+          <h2>Agents need more than wallets.</h2>
+          <p class="section-copy">Useful on-chain agents need identity, metadata, service discovery, verifiable ownership, and reputation. agent-kit packages those building blocks into a Go SDK and CLI that other Celo builders can reuse.</p>
+        </div>
+        <div class="proof-cards">
+          <div class="proof-card"><strong>SDK</strong><span>Reusable Go packages for metadata, registry, resolver, network, and reputation workflows.</span></div>
+          <div class="proof-card"><strong>CLI</strong><span>A practical developer path for creating, publishing, registering, and resolving agents.</span></div>
+          <div class="proof-card"><strong>Celo</strong><span>Designed around mainnet proof, agent references, explorer links, and public documentation.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Core modules</div>
+          <h2>The minimum useful stack for agent infrastructure.</h2>
+          <p class="section-copy">The homepage should make one thing clear to reviewers and builders: this is infrastructure they can install, inspect, and build with.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card"><div class="icon-box">{}</div><h3>Agent Metadata</h3><p>Create ERC-8004-style metadata documents with name, description, image, service endpoints, and canonical references.</p></article>
+          <article class="feature-card"><div class="icon-box">⎇</div><h3>Service Discovery</h3><p>Describe MCP, A2A, HTTP API, and custom service endpoints so other agents and apps can discover capabilities.</p></article>
+          <article class="feature-card"><div class="icon-box">↥</div><h3>IPFS Publishing</h3><p>Publish metadata to IPFS through Pinata or compatible providers and reuse returned URIs for registry operations.</p></article>
+          <article class="feature-card"><div class="icon-box">⌁</div><h3>Celo Registry Client</h3><p>Register, update, and resolve agents through Celo-compatible smart contract registry interfaces.</p></article>
+          <article class="feature-card"><div class="icon-box">#</div><h3>Agent References</h3><p>Generate canonical refs such as eip155:42220:&lt;registry&gt;:&lt;agentId&gt; for consistent cross-tool resolution.</p></article>
+          <article class="feature-card"><div class="icon-box">✓</div><h3>Reputation Client</h3><p>Submit and read feedback signals that help create trust layers for discoverable agents.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" class="section">
+      <div class="container">
+        <div class="architecture">
+          <div class="architecture-top">
+            <div>
+              <div class="section-kicker">Architecture</div>
+              <div class="arch-title">Developer → agent-kit → IPFS + Celo Registry → Discoverable Agent</div>
+            </div>
+            <div class="arch-caption">A simple path from local developer tooling to verifiable on-chain agent identity. Keep this page honest: replace placeholders with real registry addresses and explorer links once deployed.</div>
+          </div>
+          <div class="architecture-body">
+            <div class="arch-flow">
+              <div class="arch-node"><strong>Developer</strong><p>Uses the CLI or Go SDK to define agent identity, metadata, and services.</p><div class="arch-meta"><span class="tag">Go</span><span class="tag">CLI</span><span class="tag">SDK</span></div></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node dark"><strong>agent-kit</strong><p>Builds metadata, publishes to IPFS, resolves networks, and speaks to registry/reputation contracts.</p><div class="arch-meta"><span class="tag">metadata</span><span class="tag">resolver</span></div></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node"><strong>IPFS + Celo</strong><p>Stores metadata off-chain and registers canonical identity and state on Celo mainnet.</p><div class="arch-meta"><span class="tag">ipfs://</span><span class="tag">42220</span></div></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node"><strong>Discoverable Agent</strong><p>Other builders resolve owner, wallet, metadata, services, and reputation signals.</p><div class="arch-meta"><span class="tag">MCP</span><span class="tag">A2A</span><span class="tag">reputation</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart" class="section">
+      <div class="container quickstart-grid">
+        <div>
+          <div class="section-kicker">Quickstart</div>
+          <h2>Show the developer path in four commands.</h2>
+          <p class="section-copy">The fastest way to communicate credibility is to show the expected workflow. This section should map directly to your README and docs.</p>
+          <div class="steps">
+            <div class="step"><div class="step-num">1</div><div><strong>Create metadata</strong><span>Generate a local JSON document for the agent and its service endpoints.</span></div></div>
+            <div class="step"><div class="step-num">2</div><div><strong>Publish to IPFS</strong><span>Pin metadata and return a content-addressed URI.</span></div></div>
+            <div class="step"><div class="step-num">3</div><div><strong>Register on Celo</strong><span>Write the agent identity and metadata URI to the registry.</span></div></div>
+            <div class="step"><div class="step-num">4</div><div><strong>Resolve and verify</strong><span>Read owner, wallet, services, metadata, and reputation signals.</span></div></div>
+          </div>
+        </div>
+        <div class="code-panel">
+          <div class="terminal-top">
+            <div class="traffic"><span></span><span></span><span></span></div>
+            <div class="terminal-label">copy-paste flow</div>
+          </div>
+          <div class="code-body">
+<pre><span class="cmd">$</span> agent-kit create \
+  <span class="flag">--name</span> <span class="str">"Celo Yield Agent"</span> \
+  <span class="flag">--description</span> <span class="str">"Example registered Celo agent"</span> \
+  <span class="flag">--service</span> <span class="str">MCP:https://agent.example/mcp</span>
+
+<span class="cmd">$</span> agent-kit publish ./agent.json --provider pinata
+<span class="ok">✓</span> ipfs://bafybeigdyrzt...
+
+<span class="cmd">$</span> agent-kit register \
+  --network celo \
+  --metadata ipfs://bafybeigdyrzt...
+<span class="ok">✓</span> tx: 0xabc...123
+
+<span class="cmd">$</span> agent-kit resolve eip155:42220:0xRegistry:1
+<span class="ok">✓</span> owner: 0xOwner...
+<span class="ok">✓</span> services: MCP, A2A</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mainnet" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Mainnet evidence</div>
+          <h2>Make the grant review easy to verify.</h2>
+          <p class="section-copy">When the registry and demo agent are live, this section becomes the proof packet: contract address, agent reference, metadata URI, and explorer transactions.</p>
+        </div>
+        <div class="evidence">
+          <div class="evidence-card">
+            <h3>Celo Mainnet Demo</h3>
+            <p>Replace these placeholders with real deployment data before submitting the grant application.</p>
+            <div class="evidence-list">
+              <div class="evidence-row"><span class="label">Network</span><span class="mono">Celo Mainnet / 42220</span><span class="status">Ready</span></div>
+              <div class="evidence-row"><span class="label">Registry</span><span class="mono placeholder">0xRegistryAddress</span><span class="placeholder">add link</span></div>
+              <div class="evidence-row"><span class="label">Agent Ref</span><span class="mono placeholder">eip155:42220:0xRegistry:1</span><span class="placeholder">add link</span></div>
+              <div class="evidence-row"><span class="label">Metadata</span><span class="mono placeholder">ipfs://bafy...</span><span class="placeholder">add link</span></div>
+            </div>
+          </div>
+          <div class="evidence-card light">
+            <h3>Transaction checklist</h3>
+            <p>Show verifiable activity without forcing reviewers to inspect the repo first.</p>
+            <div class="evidence-list">
+              <div class="evidence-row"><span class="label">Register Agent</span><span class="mono placeholder">0x...</span><span class="placeholder">Explorer</span></div>
+              <div class="evidence-row"><span class="label">Update Metadata</span><span class="mono placeholder">0x...</span><span class="placeholder">Explorer</span></div>
+              <div class="evidence-row"><span class="label">Submit Feedback</span><span class="mono placeholder">0x...</span><span class="placeholder">Explorer</span></div>
+              <div class="evidence-row"><span class="label">Resolve Demo</span><span class="mono placeholder">docs/example</span><span class="placeholder">Docs</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Documentation</div>
+          <h2>Docs that make the infrastructure inspectable.</h2>
+          <p class="section-copy">For an infra grant, documentation is part of the product. These cards should link to real pages as you build the docs.</p>
+        </div>
+        <div class="doc-grid">
+          <a class="doc-card" href="#"><h3>Quickstart</h3><p>Install the CLI, create metadata, publish, register, and resolve an agent.</p><div class="arrow">Read guide →</div></a>
+          <a class="doc-card" href="#"><h3>Metadata schema</h3><p>Understand fields for identity, services, images, and canonical references.</p><div class="arrow">View schema →</div></a>
+          <a class="doc-card" href="#"><h3>Celo registry</h3><p>Network config, contract addresses, registration, reads, and resolver usage.</p><div class="arrow">Open docs →</div></a>
+          <a class="doc-card" href="#"><h3>Reputation</h3><p>Submit and read feedback events for trust and agent quality signals.</p><div class="arrow">See example →</div></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="grant-fit" class="section">
+      <div class="container">
+        <div class="grant-band">
+          <div>
+            <div class="section-kicker">Grant fit</div>
+            <h2>Built as public infrastructure, not a single agent app.</h2>
+            <p>agent-kit gives Celo builders a reusable Go SDK and CLI for agent identity, metadata, discovery, registry interactions, and reputation flows. The goal is to make the agent economy easier to build on, verify, and extend.</p>
+            <div class="hero-actions">
+              <a class="btn btn-accent" href="#mainnet">Review mainnet proof</a>
+              <a class="btn btn-ghost" href="https://github.com/ronexlemon/agent-kit" target="_blank" rel="noreferrer">Inspect repository</a>
+            </div>
+          </div>
+          <div class="fit-list">
+            <div class="fit-item"><span class="check">✓</span><span>Reusable developer tooling for Go builders.</span></div>
+            <div class="fit-item"><span class="check">✓</span><span>Celo-native registration and resolver workflows.</span></div>
+            <div class="fit-item"><span class="check">✓</span><span>Open-source code, examples, and public documentation.</span></div>
+            <div class="fit-item"><span class="check">✓</span><span>Designed for verifiable mainnet activity and explorer evidence.</span></div>
+            <div class="fit-item"><span class="check">✓</span><span>Aligned with ERC-8004-style metadata and agent discovery.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Roadmap</div>
+          <h2>Keep the first version focused.</h2>
+          <p class="section-copy">The sandbox can come later. For the application, the homepage should emphasize the SDK, CLI, docs, and mainnet proof.</p>
+        </div>
+        <div class="roadmap">
+          <div class="milestone-card now"><h3>Now</h3><p>The submission-ready scope.</p><ul><li>Core Go SDK packages</li><li>CLI create/publish/register/resolve</li><li>IPFS publishing</li><li>Celo network resolution</li><li>Public docs and homepage</li></ul></div>
+          <div class="milestone-card"><h3>Next</h3><p>The immediate post-grant expansion.</p><ul><li>Reputation examples</li><li>Self Agent ID alignment guide</li><li>Mainnet demo agent</li><li>CI-tested example flows</li><li>More registry adapters</li></ul></div>
+          <div class="milestone-card"><h3>Later</h3><p>Useful, but not required for the first grant proof.</p><ul><li>Hosted resolver API</li><li>Web sandbox</li><li>Agent explorer</li><li>Interactive metadata builder</li><li>Agent-to-agent test environment</li></ul></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <div class="brand"><span class="brand-mark">&gt;_</span><span>agent-kit</span></div>
+      <div class="footer-links">
+        <a href="#quickstart">Quickstart</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#mainnet">Mainnet Proof</a>
+        <a href="https://github.com/ronexlemon/agent-kit" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+      <div>Open-source Go infrastructure for Celo’s agent economy.</div>
+    </div>
+  </footer>
+</body>
+</html>
